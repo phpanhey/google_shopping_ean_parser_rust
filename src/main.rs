@@ -6,9 +6,14 @@ use select::predicate::{Attr, Name};
 fn main() {
     let ean = String::from("3162420172969");
     let url = format!("https://www.google.com/search?q={}&tbm=shop", ean);
-    println!("{}",url);
-    let compare_page_url = extract_compare_page_url(get_html(url).unwrap(), ean).unwrap();
-    let _prices = extract_prices(get_html(compare_page_url).unwrap());
+    let compare_page_url = extract_compare_page_url(get_html(url).unwrap(), ean.clone()).unwrap();
+    let prices = extract_prices(get_html(compare_page_url).unwrap());
+    let price_calculation = calculate_price_calculation(prices);
+
+    println!(
+        "{},{},{},{}",
+        ean, price_calculation.min, price_calculation.max, price_calculation.average
+    );
 }
 
 fn get_html(url: String) -> Result<String, Error> {
@@ -29,7 +34,7 @@ fn extract_compare_page_url(html: String, ean: String) -> Result<String, String>
     return Err("no `compare_page_url` found".to_string());
 }
 
-fn extract_prices(html: String) -> Price {
+fn extract_prices(html: String) -> Vec<Price> {
     let mut prices: Vec<Price> = Vec::new();
     let doc = Document::from(&html[..]);
     for node in doc.find(Attr("id", "online")) {
@@ -38,18 +43,10 @@ fn extract_prices(html: String) -> Price {
                 item: item_price(b_elem),
                 shipping: extract_shipping_price(b_elem),
             });
-
-            println!(
-                "Price: {} Shipping Price: {}",
-                item_price(b_elem),
-                extract_shipping_price(b_elem)
-            );
         }
     }
-    return Price {
-        item: Decimal::from_str_exact("0.0").unwrap(),
-        shipping: Decimal::from_str_exact("0.0").unwrap(),
-    };
+
+    return prices;
 }
 
 fn extract_shipping_price(b_elem: select::node::Node) -> Decimal {
@@ -76,7 +73,32 @@ fn item_price(b_elem: select::node::Node) -> Decimal {
     return Decimal::from_str_exact(val.trim()).unwrap();
 }
 
+fn calculate_price_calculation(prices: Vec<Price>) -> PriceCalculation {
+    let mut items: Vec<Decimal> = prices.iter().map(|price| price.item).collect();
+    let _shippings: Vec<Decimal> = prices.iter().map(|price| price.shipping).collect();
+
+    items.sort();
+
+    let first = items.first().unwrap();
+    let last = items.last().unwrap();
+
+    let sum: Decimal = items.iter().sum();
+    let average = sum / Decimal::new(items.len() as i64, 0);
+
+    return PriceCalculation {
+        min: *first,
+        max: *last,
+        average: average,
+    };
+}
+
 struct Price {
     item: Decimal,
     shipping: Decimal,
+}
+
+struct PriceCalculation {
+    min: Decimal,
+    max: Decimal,
+    average: Decimal,
 }
