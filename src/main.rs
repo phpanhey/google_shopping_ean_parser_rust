@@ -1,4 +1,5 @@
 use reqwest::Error;
+use rust_decimal::Decimal;
 use select::document::Document;
 use select::predicate::{Attr, Name};
 
@@ -28,27 +29,30 @@ fn extract_compare_page_url(html: String, ean: String) -> Result<String, String>
     return Err("no `compare_page_url` found".to_string());
 }
 
-fn extract_prices(html: String) -> Prices {
-    let mut prices = Prices {
-        items: Vec::new(),
-        shippings: Vec::new(),
-    };
+fn extract_prices(html: String) -> Price {
+    let mut prices: Vec<Price> = Vec::new();
     let doc = Document::from(&html[..]);
     for node in doc.find(Attr("id", "online")) {
         for b_elem in node.find(Name("b")) {
-            let price = item_price(b_elem);
-            let shipping_price = extract_shipping_price(b_elem);
+            prices.push(Price {
+                item: item_price(b_elem),
+                shipping: extract_shipping_price(b_elem),
+            });
 
-            prices.items.push(price);
-            prices.shippings.push(shipping_price);
-
-            println!("Price: {} Shipping Price: {}", price, shipping_price);
+            println!(
+                "Price: {} Shipping Price: {}",
+                item_price(b_elem),
+                extract_shipping_price(b_elem)
+            );
         }
     }
-    return prices;
+    return Price {
+        item: Decimal::from_str_exact("0.0").unwrap(),
+        shipping: Decimal::from_str_exact("0.0").unwrap(),
+    };
 }
 
-fn extract_shipping_price(b_elem: select::node::Node) -> f32 {
+fn extract_shipping_price(b_elem: select::node::Node) -> Decimal {
     let value = b_elem
         .parent()
         .unwrap()
@@ -64,20 +68,15 @@ fn extract_shipping_price(b_elem: select::node::Node) -> f32 {
         .replace(",", ".")
         .replace("€", "");
 
-    return value.trim().parse::<f32>().unwrap();
+    return Decimal::from_str_exact(value.trim()).unwrap();
 }
 
-fn item_price(b_elem: select::node::Node) -> f32 {
-    return b_elem
-        .text()
-        .replace(",", ".")
-        .replace("€", "")
-        .trim()
-        .parse::<f32>()
-        .unwrap();
+fn item_price(b_elem: select::node::Node) -> Decimal {
+    let val = b_elem.text().replace(",", ".").replace("€", "");
+    return Decimal::from_str_exact(val.trim()).unwrap();
 }
 
-struct Prices {
-    items: Vec<f32>,
-    shippings: Vec<f32>,
+struct Price {
+    item: Decimal,
+    shipping: Decimal,
 }
