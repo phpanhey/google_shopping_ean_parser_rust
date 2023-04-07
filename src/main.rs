@@ -2,9 +2,13 @@ use reqwest::Error;
 use rust_decimal::Decimal;
 use select::document::Document;
 use select::predicate::{Attr, Name};
-
+use std::env;
 fn main() {
-    let ean = String::from("3162420674272");
+    let args: Vec<String> = env::args().collect();
+    if args.len() <= 1 {
+        std::process::exit(1);
+    }
+    let ean = &args[1];
     let url = format!("https://www.google.com/search?q={}&tbm=shop", ean);
     let compare_page_url = extract_compare_page_url(get_html(url).unwrap(), ean.clone()).unwrap();
     let prices = extract_prices(get_html(compare_page_url).unwrap());
