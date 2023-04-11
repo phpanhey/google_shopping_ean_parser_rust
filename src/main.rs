@@ -26,12 +26,12 @@ fn get_html(url: String) -> Result<String, Error> {
 
 fn extract_compare_page_url(html: String, ean: String) -> Result<String, String> {
     let doc = Document::from(&html[..]);
-    for tbody in doc.find(Name("a")).filter_map(|a| a.attr("href")) {
-        if tbody.contains("product/") && tbody.contains(&ean) {
+    for anchor in doc.find(Name("a")).filter_map(|a| a.attr("href")) {
+        if anchor.contains("product/") && anchor.contains(&ean) {
             return Ok(format!(
                 "{}{}",
                 "https://www.google.com/",
-                String::from(tbody)
+                String::from(anchor)
             ));
         }
     }
