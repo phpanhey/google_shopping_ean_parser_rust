@@ -12,12 +12,17 @@ fn main() {
     let url = format!("https://www.google.com/search?q={}&tbm=shop", ean);
     let compare_page_url = extract_compare_page_url(get_html(url).unwrap(), ean.clone()).unwrap();
     let prices = extract_prices(get_html(compare_page_url).unwrap());
-    let price_calculation = calculate_price_calculation(prices);
+    let price_calculation = calculate_price_calculation(prices.clone());
 
-    println!(
-        "{},{},{},{}",
+    print!(
+        "{},{},{},{},",
         ean, price_calculation.min, price_calculation.max, price_calculation.average
     );
+    let mut sep = "";
+    for price in prices.iter() {
+        print!("{}{}", sep, price.item);
+        sep = ","
+    }
 }
 
 fn get_html(url: String) -> Result<String, Error> {
@@ -96,6 +101,7 @@ fn calculate_price_calculation(prices: Vec<Price>) -> PriceCalculation {
     };
 }
 
+#[derive(Clone)]
 struct Price {
     item: Decimal,
     shipping: Decimal,
