@@ -50,7 +50,11 @@ fn extract_data(html: String) -> DataItem {
 }
 
 fn item_price(b_elem: select::node::Node) -> Decimal {
-    let val = b_elem.text().replace(",", ".").replace("€", "");
+    let val = b_elem
+        .text()
+        .replace(".", "")
+        .replace(",", ".")
+        .replace("€", "");
     return Decimal::from_str_exact(val.trim()).unwrap();
 }
 
@@ -103,13 +107,8 @@ fn ean_incorrect() -> bool {
     if args.len() <= 1 {
         return true;
     }
-    if &args[1] == "ean" {
-        return true;
-    }
-    if &args[1] == "" {
-        return true;
-    }
-    return false;
+    let ean = &args[1];
+    return ean == "ean" || ean == "";
 }
 
 fn get_ean() -> String {
