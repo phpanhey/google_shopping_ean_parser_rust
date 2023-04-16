@@ -4,15 +4,14 @@ use select::document::Document;
 use select::predicate::{Attr, Name};
 use std::env;
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() <= 1 {
+    if ean_incorrect() {
         std::process::exit(1);
     }
-    let ean = &args[1];
+    let ean = get_ean();
     let url = format!("https://www.google.com/search?q={}&tbm=shop", ean);
     let compare_page_url = extract_compare_page_url(get_html(url).unwrap(), ean.clone()).unwrap();
     let data_item = extract_data(get_html(compare_page_url).unwrap());
-    println!("{},{}",ean, data_item.to_string());
+    println!("{},{}", ean, data_item.to_string());
 }
 
 fn get_html(url: String) -> Result<String, Error> {
@@ -87,7 +86,6 @@ impl DataItem {
     fn to_string(&self) -> String {
         format!(
             "{},{},{},{}",
-            
             self.price_min,
             self.price_max,
             self.price_average,
@@ -98,4 +96,22 @@ impl DataItem {
                 .join(",")
         )
     }
+}
+
+fn ean_incorrect() -> bool {
+    let args: Vec<String> = env::args().collect();
+    if args.len() <= 1 {
+        return true;
+    }
+    if &args[1] == "ean" {
+        return true;
+    }
+    if &args[1] == "" {
+        return true;
+    }
+    return false;
+}
+
+fn get_ean() -> String {
+    return env::args().nth(1).expect("Missing argument");
 }
