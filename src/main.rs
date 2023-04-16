@@ -11,10 +11,8 @@ fn main() {
     let ean = &args[1];
     let url = format!("https://www.google.com/search?q={}&tbm=shop", ean);
     let compare_page_url = extract_compare_page_url(get_html(url).unwrap(), ean.clone()).unwrap();
-    // println!("{}",get_html(compare_page_url).unwrap());
-    
     let data_item = extract_data(get_html(compare_page_url).unwrap());
-    // println!("{},{}",ean, data_item.to_string());
+    println!("{},{}",ean, data_item.to_string());
 }
 
 fn get_html(url: String) -> Result<String, Error> {
@@ -42,18 +40,12 @@ fn extract_data(html: String) -> DataItem {
         for b_elem in node.find(Name("b")) {
             prices.push(item_price(b_elem));
         }
-
-        for link in node.find(Name("a")) {
-            println!("{}", link.text());
-        }
     }
     let calculation = calculate_price_calculation(prices.clone());
     return DataItem {
         price_min: calculation.min,
         price_max: calculation.max,
         price_average: calculation.average,
-        name: "lorem".to_string(),
-        url: "lorem.de".to_string(),
         prices: prices,
     };
 }
@@ -85,8 +77,6 @@ struct PriceCalculation {
     average: Decimal,
 }
 struct DataItem {
-    name: String,
-    url: String,
     price_min: Decimal,
     price_max: Decimal,
     price_average: Decimal,
@@ -96,9 +86,8 @@ struct DataItem {
 impl DataItem {
     fn to_string(&self) -> String {
         format!(
-            "{},{},{},{},{},{}",
-            self.name,
-            self.url,
+            "{},{},{},{}",
+            
             self.price_min,
             self.price_max,
             self.price_average,
