@@ -9,27 +9,13 @@ fn main() {
     }
     let ean = get_ean();
     let url = format!("https://www.google.com/search?q={}&tbm=shop", ean);
-    let compare_page_url = extract_compare_page_url(get_html(url).unwrap(), ean.clone()).unwrap();
-    let data_item = extract_data(get_html(compare_page_url).unwrap());
+    let last_product_url = extract_last_product_url(get_html(url).unwrap()).unwrap();
+    let data_item = extract_data(get_html(last_product_url).unwrap());
     println!("{},{}", ean, data_item.to_string());
 }
 
 fn get_html(url: String) -> Result<String, Error> {
     return reqwest::blocking::get(url)?.text();
-}
-
-fn extract_compare_page_url(html: String, ean: String) -> Result<String, String> {
-    let doc = Document::from(&html[..]);
-    for anchor in doc.find(Name("a")).filter_map(|a| a.attr("href")) {
-        if anchor.contains("product/") && anchor.contains(&ean) {
-            return Ok(format!(
-                "{}{}",
-                "https://www.google.com/",
-                String::from(anchor)
-            ));
-        }
-    }
-    return Err("no `compare_page_url` found".to_string());
 }
 
 fn extract_data(html: String) -> DataItem {
@@ -113,4 +99,17 @@ fn ean_incorrect() -> bool {
 
 fn get_ean() -> String {
     return env::args().nth(1).expect("Missing argument");
+}
+
+fn extract_last_product_url(html: String) -> Option<String> {
+    let doc = Document::from(&html[..]);
+    let mut urls: Vec<String> = Vec::new();
+
+    for link in doc.find(Name("a")).filter_map(|n| n.attr("href")) {
+        if link.contains("/product/") {
+            urls.push(link.to_string());
+        }
+    }
+    return urls.pop()
+        .map(|url| format!("{}{}", "https://www.google.com/", url));
 }
